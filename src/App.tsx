@@ -1,5 +1,15 @@
+import useThree from 'lib/hooks/useThree';
+
+const initThree = () => {};
+
 function App() {
-  return <div className="text-lg text-red-500">Hello world</div>;
+  const { ref } = useThree({ init: initThree });
+
+  return (
+    <>
+      <canvas ref={ref}></canvas>
+    </>
+  );
 }
 
 export default App;
