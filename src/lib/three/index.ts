@@ -119,6 +119,7 @@ class RUAThree {
     this.renderRequested = false;
     this.time = time *= 0.001;
     this.renderer.render(this.scene, this.camera);
+    this.controls.update();
     this.renderQueue.map((cb) => cb(this.time));
     this.stats && this.stats.update();
 

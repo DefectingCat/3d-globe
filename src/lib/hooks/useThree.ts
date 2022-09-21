@@ -1,8 +1,9 @@
 import RUAThree, { defaultProps, ThreeProps } from 'lib/three';
 import { useEffect, useRef } from 'react';
 
+export type InitFn = (three: RUAThree) => void;
 type Props = {
-  init: (three: RUAThree) => void;
+  init: InitFn;
 } & ThreeProps;
 
 const useThree = (props: Props) => {
