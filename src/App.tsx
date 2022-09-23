@@ -1,6 +1,5 @@
 import useThree, { InitFn, THREE } from 'lib/hooks/useThree';
 import world from 'assets/world.png';
-import dot from 'assets/dot.png';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -8,6 +7,9 @@ const DEG2RAD = Math.PI / 180;
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
+/**
+ * 从 canvas 获取 ImageData
+ */
 const getImageData = (img: HTMLImageElement) => {
   const ctx = document.createElement('canvas').getContext('2d');
   if (!ctx?.canvas) return;
@@ -17,6 +19,9 @@ const getImageData = (img: HTMLImageElement) => {
   return ctx.getImageData(0, 0, img.width, img.height);
 };
 
+/**
+ * 检测是当前 UV 是否有像素
+ */
 const visibilityForCoordinate = (
   lng: number,
   lat: number,
@@ -31,6 +36,9 @@ const visibilityForCoordinate = (
   return data.data[s] > 90;
 };
 
+/**
+ * 计算 UV 到 Vector3
+ */
 const calcPos = (
   lat: number,
   lng: number,
@@ -50,7 +58,7 @@ const calcPos = (
 
 const init: InitFn = ({ scene, camera, controls, renderer }) => {
   camera.position.set(0, 10, 100);
-  // controls.enableZoom = false;
+  controls.enableZoom = false;
   controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
 
@@ -154,7 +162,6 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
   lightSpot2.target = parentContainer;
   lightDir.target = parentContainer;
   camera.add(lightAmb, lightSpot1, lightSpot2);
-  // scene.add(new THREE.SpotLightHelper(lightSpot1));
   scene.add(camera);
 
   // Dots
@@ -184,12 +191,12 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
       transparent: !0,
       alphaTest: 0.02,
     });
-    dotMat.onBeforeCompile = (t) => {
-      t.fragmentShader = t.fragmentShader.replace(
-        'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
-        '\n        gl_FragColor = vec4( outgoingLight, diffuseColor.a );\n        if (gl_FragCoord.z > 0.51) {\n          gl_FragColor.a = 1.0 + ( 0.51 - gl_FragCoord.z ) * 17.0;\n        }\n      '
-      );
-    };
+    // dotMat.onBeforeCompile = (t) => {
+    //   t.fragmentShader = t.fragmentShader.replace(
+    //     'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+    //     '\n        gl_FragColor = vec4( outgoingLight, diffuseColor.a );\n        if (gl_FragCoord.z > 0.51) {\n          gl_FragColor.a = 1.0 + ( 0.51 - gl_FragCoord.z ) * 17.0;\n        }\n      '
+    //   );
+    // };
 
     const dots = new THREE.InstancedMesh(dot, dotMat, points.length);
     for (let l = 0; l < points.length; l++) dots.setMatrixAt(l, points[l]);
