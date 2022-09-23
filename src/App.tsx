@@ -1,8 +1,6 @@
 import useThree, { InitFn, THREE } from 'lib/hooks/useThree';
 import world from 'assets/world.png';
 import dot from 'assets/dot.png';
-import globeVertex from 'assets/shaders/vertex.glsl';
-import globeFragment from 'assets/shaders/fragment.glsl';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -33,8 +31,27 @@ const visibilityForCoordinate = (
   return data.data[s] > 90;
 };
 
+const calcPos = (
+  lat: number,
+  lng: number,
+  radius: number,
+  vec?: THREE.Vector3
+) => {
+  const _vec = vec ?? new THREE.Vector3();
+  const v = (90 - lat) * DEG2RAD;
+  const h = (lng + 180) * DEG2RAD;
+  _vec.set(
+    -radius * Math.sin(v) * Math.cos(h),
+    radius * Math.cos(v),
+    radius * Math.sin(v) * Math.sin(h)
+  );
+  return _vec;
+};
+
 const init: InitFn = ({ scene, camera, controls, renderer }) => {
   camera.position.set(0, 10, 100);
+  // controls.enableZoom = false;
+  controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
 
   const { width, height, x, y } = renderer.domElement.getBoundingClientRect();
@@ -55,17 +72,17 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
   scene.add(haloContainer);
 
   // Globe water
-  const shadowPoint = new THREE.Vector3()
-    .copy(parentContainer.position)
-    .add(
-      new THREE.Vector3(0.7 * GLOBE_RADIUS, 0.3 * -GLOBE_RADIUS, GLOBE_RADIUS)
-    );
-  const highlightPoint = new THREE.Vector3()
-    .copy(parentContainer.position)
-    .add(new THREE.Vector3(1.5 * -GLOBE_RADIUS, 1.5 * -GLOBE_RADIUS, 0));
-  const frontPoint = new THREE.Vector3()
-    .copy(parentContainer.position)
-    .add(new THREE.Vector3(0, 0, GLOBE_RADIUS));
+  // const shadowPoint = new THREE.Vector3()
+  //   .copy(parentContainer.position)
+  //   .add(
+  //     new THREE.Vector3(0.7 * GLOBE_RADIUS, 0.3 * -GLOBE_RADIUS, GLOBE_RADIUS)
+  //   );
+  // const highlightPoint = new THREE.Vector3()
+  //   .copy(parentContainer.position)
+  //   .add(new THREE.Vector3(1.5 * -GLOBE_RADIUS, 1.5 * -GLOBE_RADIUS, 0));
+  // const frontPoint = new THREE.Vector3()
+  //   .copy(parentContainer.position)
+  //   .add(new THREE.Vector3(0, 0, GLOBE_RADIUS));
 
   // Globe
   const spGeo = new THREE.SphereGeometry(GLOBE_RADIUS, 55, 55);
@@ -74,7 +91,7 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
     metalness: 0,
     roughness: 0.9,
   });
-  const uniforms = [];
+  // const uniforms = [];
   // material.onBeforeCompile = (t) => {
   //   t.uniforms.shadowDist = {
   //     value: 1.5 * GLOBE_RADIUS,
@@ -137,22 +154,47 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
   lightSpot2.target = parentContainer;
   lightDir.target = parentContainer;
   camera.add(lightAmb, lightSpot1, lightSpot2);
-  scene.add(new THREE.SpotLightHelper(lightSpot1));
+  // scene.add(new THREE.SpotLightHelper(lightSpot1));
   scene.add(camera);
 
   // Dots
   img.onload = () => {
     const point = new THREE.Object3D();
     const imgData = getImageData(img);
-    const arr = [];
+    const points: THREE.Matrix4[] = [];
     for (let lat = -90; lat <= 90; lat += 180 / worldDotRows) {
       const radius = Math.cos(Math.abs(lat) * DEG2RAD) * GLOBE_RADIUS;
       const circum = radius * Math.PI * 2 * 2;
       for (let r = 0; r < circum; r++) {
         const lng = (360 * r) / circum - 180;
         if (!visibilityForCoordinate(lng, lat, imgData)) continue;
+        const s = calcPos(lat, lng, GLOBE_RADIUS);
+        point.position.set(s.x, s.y, s.z);
+        const o = calcPos(lat, lng, GLOBE_RADIUS + 5);
+        point.lookAt(o.x, o.y, o.z);
+        point.updateMatrix();
+        points.push(point.matrix.clone());
       }
     }
+    const dot = new THREE.CircleGeometry(worldDotSize, 5);
+    const dotMat = new THREE.MeshStandardMaterial({
+      color: 3818644,
+      metalness: 0,
+      roughness: 0.9,
+      transparent: !0,
+      alphaTest: 0.02,
+    });
+    dotMat.onBeforeCompile = (t) => {
+      t.fragmentShader = t.fragmentShader.replace(
+        'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+        '\n        gl_FragColor = vec4( outgoingLight, diffuseColor.a );\n        if (gl_FragCoord.z > 0.51) {\n          gl_FragColor.a = 1.0 + ( 0.51 - gl_FragCoord.z ) * 17.0;\n        }\n      '
+      );
+    };
+
+    const dots = new THREE.InstancedMesh(dot, dotMat, points.length);
+    for (let l = 0; l < points.length; l++) dots.setMatrixAt(l, points[l]);
+    dots.renderOrder = 3;
+    parentContainer.add(dots);
   };
 };
 
