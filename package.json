@@ -18,11 +18,11 @@
     "three": "^0.144.0"
   },
   "devDependencies": {
-    "@types/stats.js": "^0.17.0",
-    "@types/three": "^0.144.0",
     "@types/node": "^18.7.18",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
+    "@types/stats.js": "^0.17.0",
+    "@types/three": "^0.144.0",
     "@vitejs/plugin-react": "^2.1.0",
     "autoprefixer": "^10.4.12",
     "postcss": "^8.4.16",
