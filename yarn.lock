@@ -1085,6 +1085,11 @@ rollup@~2.78.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
+rua-three@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.npmjs.org/rua-three/-/rua-three-1.0.2.tgz#cafb9b142f4c4c5451088dd4d482ecd5c7859d73"
+  integrity sha512-bVOtvxykwSfzSfHmFCMXc4hk15WY4+9rhSybdeB2SIt2vAWl0XRa2CvkzlBIDa/hyVrsccjfEy8qDkC4oHJ1Ag==
+
 run-parallel@^1.1.9:
   version "1.2.0"
   resolved "https://registry.npmmirror.com/run-parallel/-/run-parallel-1.2.0.tgz#66d1368da7bdf921eb9d95bd1a9229e7f21a43ee"

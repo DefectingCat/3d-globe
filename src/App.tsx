@@ -1,5 +1,6 @@
-import useThree, { InitFn, THREE } from 'lib/hooks/useThree';
+import { useThree, THREE } from 'rua-three';
 import world from 'assets/world.png';
+import { InitFn } from 'rua-three/lib/esm/hooks/useThree';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -56,9 +57,15 @@ const calcPos = (
   return _vec;
 };
 
-const init: InitFn = ({ scene, camera, controls, renderer }) => {
+const init: InitFn = ({
+  scene,
+  camera,
+  controls,
+  renderer,
+  addRenderCallback,
+}) => {
   camera.position.set(0, 10, 100);
-  controls.enableZoom = false;
+  // controls.enableZoom = false;
   controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
 
@@ -203,6 +210,10 @@ const init: InitFn = ({ scene, camera, controls, renderer }) => {
     dots.renderOrder = 3;
     parentContainer.add(dots);
   };
+
+  // Update funtion
+  const update = (time: number) => {};
+  addRenderCallback(update);
 };
 
 const App = () => {
