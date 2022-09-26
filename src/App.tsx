@@ -1,6 +1,5 @@
-import { useThree, THREE } from 'rua-three';
+import { useThree, THREE, InitFn } from 'rua-three';
 import world from 'assets/world.png';
-import { InitFn } from 'rua-three/lib/esm/hooks/useThree';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;

@@ -1085,10 +1085,10 @@ rollup@~2.78.0:
   optionalDependencies:
     fsevents "~2.3.2"
 
-rua-three@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.npmjs.org/rua-three/-/rua-three-1.0.2.tgz#cafb9b142f4c4c5451088dd4d482ecd5c7859d73"
-  integrity sha512-bVOtvxykwSfzSfHmFCMXc4hk15WY4+9rhSybdeB2SIt2vAWl0XRa2CvkzlBIDa/hyVrsccjfEy8qDkC4oHJ1Ag==
+rua-three@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.npmjs.org/rua-three/-/rua-three-1.0.3.tgz#6f45769fb7fc4f301e41dcac33d67261aa3c7bcf"
+  integrity sha512-ebf0saW1YnXkqt5/n7hIddIjAZ5tNiAVNPE2LTtnjWKdWzhFu544FKWP/C5YQc23Eomfz/5X0G8lgYVZzXp8jA==
 
 run-parallel@^1.1.9:
   version "1.2.0"
