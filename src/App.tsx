@@ -64,7 +64,7 @@ const init: InitFn = ({
   addRenderCallback,
 }) => {
   camera.position.set(0, 10, 100);
-  // controls.enableZoom = false;
+  controls.enableZoom = false;
   controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
 
@@ -75,6 +75,7 @@ const init: InitFn = ({
   img.src = world;
   img.crossOrigin = 'Anonymous';
 
+  // parent container is dots's container
   const parentContainer = new THREE.Group();
   const euler = new THREE.Euler(0.3, 4.6, 0.05);
   const offset = new Date().getTimezoneOffset() || 0;
@@ -83,7 +84,6 @@ const init: InitFn = ({
   scene.add(parentContainer);
 
   const haloContainer = new THREE.Group();
-  scene.add(haloContainer);
 
   // Globe water
   // const shadowPoint = new THREE.Vector3()
@@ -145,9 +145,9 @@ const init: InitFn = ({
 
   // lights
   const lightAmb = new THREE.AmbientLight(16777215, 0.8);
-  const lightSpot1 = new THREE.SpotLight(2197759, 12, 120, 0.3, 0, 1.1);
-  const lightSpot2 = new THREE.SpotLight(16018366, 5, 75, 0.5, 0, 1.25);
-  const lightDir = new THREE.DirectionalLight(11124735, 3);
+  const lightSpot1 = new THREE.SpotLight(2197759, 28, 120, 0.3, 0, 1.1);
+  const lightSpot2 = new THREE.SpotLight(16018366, 16, 75, 0.5, 0, 1.25);
+  const lightDir = new THREE.DirectionalLight(11124735, 10);
   lightSpot1.position.set(
     parentContainer.position.x - 2.5 * GLOBE_RADIUS,
     80,
@@ -209,6 +209,46 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
   };
+
+  // halo
+  const haloGeo = new THREE.SphereGeometry(GLOBE_RADIUS, 45, 45);
+  const haloMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      c: {
+        value: 0.9,
+      },
+      p: {
+        value: 6,
+      },
+      glowColor: {
+        value: new THREE.Color(1844322),
+      },
+      viewVector: {
+        value: new THREE.Vector3(0, 0, 220),
+      },
+    },
+    vertexShader:
+      '#define GLSLIFY 1\nuniform vec3 viewVector;\nuniform float c;\nuniform float p;\nvarying float intensity;\nvarying float intensityA;\nvoid main() \n{\n  vec3 vNormal = normalize( normalMatrix * normal );\n  vec3 vNormel = normalize( normalMatrix * viewVector );\n  intensity = pow( c - dot(vNormal, vNormel), p );\n  intensityA = pow( 0.63 - dot(vNormal, vNormel), p );\n  \n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',
+    fragmentShader:
+      '#define GLSLIFY 1\nuniform vec3 glowColor;\nvarying float intensity;\nvarying float intensityA;\nvoid main()\n{\n  gl_FragColor = vec4( glowColor * intensity, 1.0 * intensityA );\n}',
+    side: 2,
+    blending: 2,
+    transparent: !0,
+    dithering: !0,
+  });
+  const halo = new THREE.Mesh(haloGeo, haloMaterial);
+  halo.scale.multiplyScalar(1.2);
+  halo.rotateX(0.03 * Math.PI);
+  halo.rotateY(0.03 * Math.PI);
+
+  const halo2 = new THREE.Mesh(spGeo, haloMaterial);
+  // halo2.scale.multiplyScalar(1.1);
+  halo2.position.set(0, 0, -91);
+  halo2.rotateY(0.05 * Math.PI);
+  halo2.rotateX(0.05 * Math.PI);
+  halo2.renderOrder = 4;
+  haloContainer.add(halo2);
+  camera.add(haloContainer);
 
   // Update funtion
   const update = (time: number) => {};
