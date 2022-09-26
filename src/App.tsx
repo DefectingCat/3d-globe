@@ -190,10 +190,10 @@ const init: InitFn = ({
       }
     }
     const dot = new THREE.CircleGeometry(worldDotSize, 5);
-    const dotMat = new THREE.MeshStandardMaterial({
+    const dotMat = new THREE.MeshLambertMaterial({
       color: 3818644,
-      metalness: 0,
-      roughness: 0.9,
+      // metalness: 0,
+      // roughness: 0.9,
       transparent: !0,
       alphaTest: 0.02,
     });
