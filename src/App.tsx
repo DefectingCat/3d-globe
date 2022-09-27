@@ -214,16 +214,25 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
 
-    // Destination dot
-    const destGeo = new THREE.CircleGeometry(worldDotSize * 3, 12);
+    // Destination dots
+    const dotSize = worldDotSize * 3;
+    const destGeo = new THREE.CircleGeometry(dotSize, 32);
     const destMaterial = new THREE.MeshStandardMaterial({
       color: 0xffa2ff,
       side: THREE.DoubleSide,
     });
     const destNumber = 10;
     const destDot = new THREE.InstancedMesh(destGeo, destMaterial, destNumber);
-    for (let i = 0; i < destNumber; i++)
-      destDot.setMatrixAt(i, points[randomIntFromInterval(0, pointsLen - 1)]);
+
+    // Destination ring animation
+    const ringGeo = new THREE.RingGeometry(dotSize, dotSize + 0.02, 32);
+    const destRing = new THREE.InstancedMesh(ringGeo, destMaterial, destNumber);
+
+    for (let i = 0; i < destNumber; i++) {
+      const index = randomIntFromInterval(0, pointsLen - 1);
+      destDot.setMatrixAt(i, points[index]);
+      destRing.setMatrixAt(i, points[index]);
+    }
     destDot.renderOrder = 3;
     // Set order on the world dots
     destDot.scale.set(
@@ -231,7 +240,12 @@ const init: InitFn = ({
       destDot.scale.y + 0.001,
       destDot.scale.z + 0.001
     );
-    parentContainer.add(destDot);
+    destRing.scale.set(
+      destRing.scale.x + 0.001,
+      destRing.scale.y + 0.001,
+      destRing.scale.z + 0.001
+    );
+    parentContainer.add(destDot, destRing);
   };
 
   // halo
