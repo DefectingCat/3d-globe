@@ -239,7 +239,7 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
 
-    const destNumber = 1;
+    const destNumber = 10;
     const dotSize = worldDotSize * 3;
     // Source dots
     const srcGeo = new THREE.CircleGeometry(dotSize, 32);
@@ -271,52 +271,43 @@ const init: InitFn = ({
     });
     const destRing = new THREE.InstancedMesh(ringGeo, ringMaterial, destNumber);
 
-    const source = new THREE.Vector3();
-    const control = new THREE.Vector3();
-    const destiantion = new THREE.Vector3();
-
+    const lines = new THREE.Group();
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
       const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
       destDot.setMatrixAt(i, points[index]);
       destRing.setMatrixAt(i, points[index]);
-      // srcDot.setMatrixAt(i, points[sourceIndex]);
+
+      const source = new THREE.Vector3();
+      const destiantion = new THREE.Vector3();
       source.applyMatrix4(points[sourceIndex]);
       destiantion.applyMatrix4(points[index]);
-
+      let curve;
       const angle = source.angleTo(destiantion);
       if (angle > 1) {
         const { v1, v2 } = getBezierPoint(source, destiantion);
+        curve = new THREE.CubicBezierCurve3(source, v1, v2, destiantion);
+      } else {
+        const p = new THREE.Vector3(0, 0, 0);
+        const rayLine = new THREE.Ray(
+          p,
+          getVCenter(source.clone(), destiantion.clone())
+        );
+        const vtop = rayLine.at(1.3, new THREE.Vector3());
+        curve = new THREE.QuadraticBezierCurve3(source, vtop, destiantion);
       }
-      control.set(x, y, z);
-      const curve = new THREE.QuadraticBezierCurve3(
-        source.clone(), // source
-        control.clone(), // control
-        destiantion.clone() // destination
-      );
-      console.log(source, destiantion, control);
-      source.set(0, 0, 0);
-      destiantion.set(0, 0, 0);
-      control.set(0, 0, 0);
-      const linePoints = curve.getPoints(50);
-      const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-      const curveObject = new THREE.Line(lineGeometry, lineMaterial);
-
-      // source.setFromMatrixPosition(points[sourceIndex]);
-      // destiantion.setFromMatrixPosition(points[index]);
-      // control.copy(source);
-      // control.setY(control.y + 10);
-      // const curve = new THREE.QuadraticBezierCurve3(
-      //   source, // source
-      //   control, // control
-      //   destiantion // destination
-      // );
-      // const linePoints = curve.getPoints(50);
-      // const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-      // const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-      // const curveObject = new THREE.Line(lineGeometry, lineMaterial);
-      parentContainer.add(curveObject);
+      const curvePoints = curve.getPoints(100);
+      const material = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        opacity: 0.7,
+        transparent: true,
+      });
+      const lineLength = { value: 0 };
+      // const line = new THREE.Line();
+      // const xRay = new THREE.Mesh(line, material);
+      const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+      const line = new THREE.Line(geometry, material);
+      lines.add(line);
     }
     destDot.renderOrder = 3;
     // Set order on the world dots
@@ -330,7 +321,7 @@ const init: InitFn = ({
       destRing.scale.y + 0.001,
       destRing.scale.z + 0.001
     );
-    parentContainer.add(destDot, destRing);
+    parentContainer.add(destDot, destRing, lines);
   };
 
   // halo
