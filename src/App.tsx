@@ -18,7 +18,7 @@ function getLenVcetor(v1: THREE.Vector3, v2: THREE.Vector3, len: number) {
   return v1.lerp(v2, len / v1v2Len);
 }
 function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
-  const angle = (v0.angleTo(v3) * 180) / Math.PI; // 0 ~ Math.PI       // 计算向量夹角
+  const angle = (v0.angleTo(v3) * 45) / Math.PI; // 0 ~ Math.PI       // 计算向量夹角
   const aLen = angle;
   const p0 = new THREE.Vector3(0, 0, 0); // 法线向量
   const rayLine = new THREE.Ray(p0, getVCenter(v0.clone(), v3.clone())); // 顶点坐标
@@ -27,9 +27,10 @@ function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
   // 控制点坐标
   const v1 = getLenVcetor(v0.clone(), vtop, aLen);
   const v2 = getLenVcetor(v3.clone(), vtop, aLen);
+  console.log(v1, v2);
   return {
-    v1: v1,
-    v2: v2,
+    v1,
+    v2,
   };
 }
 
@@ -296,9 +297,10 @@ const init: InitFn = ({
         const vtop = rayLine.at(1.3, new THREE.Vector3());
         curve = new THREE.QuadraticBezierCurve3(source, vtop, destiantion);
       }
+      if (!curve) continue;
       const curvePoints = curve.getPoints(100);
       const material = new THREE.LineBasicMaterial({
-        color: 0xff0000,
+        color: 0x00ddff,
         opacity: 0.7,
         transparent: true,
       });
