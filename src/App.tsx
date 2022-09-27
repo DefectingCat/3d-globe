@@ -8,6 +8,31 @@ const DEG2RAD = Math.PI / 180;
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
+function getVCenter(v1: THREE.Vector3, v2: THREE.Vector3) {
+  const v = v1.add(v2);
+  return v.divideScalar(2);
+}
+
+function getLenVcetor(v1: THREE.Vector3, v2: THREE.Vector3, len: number) {
+  const v1v2Len = v1.distanceTo(v2);
+  return v1.lerp(v2, len / v1v2Len);
+}
+function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
+  const angle = (v0.angleTo(v3) * 180) / Math.PI; // 0 ~ Math.PI       // 计算向量夹角
+  const aLen = angle;
+  const p0 = new THREE.Vector3(0, 0, 0); // 法线向量
+  const rayLine = new THREE.Ray(p0, getVCenter(v0.clone(), v3.clone())); // 顶点坐标
+  const vtop = new THREE.Vector3(0, 0, 0); // 法线向量
+  rayLine.at(100, vtop); // 位置
+  // 控制点坐标
+  const v1 = getLenVcetor(v0.clone(), vtop, aLen);
+  const v2 = getLenVcetor(v3.clone(), vtop, aLen);
+  return {
+    v1: v1,
+    v2: v2,
+  };
+}
+
 /**
  * 从 canvas 获取 ImageData
  */
@@ -214,7 +239,7 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
 
-    const destNumber = 10;
+    const destNumber = 1;
     const dotSize = worldDotSize * 3;
     // Source dots
     const srcGeo = new THREE.CircleGeometry(dotSize, 32);
@@ -222,7 +247,7 @@ const init: InitFn = ({
       color: 0x00a2ff,
       side: THREE.DoubleSide,
     });
-    const srcDot = new THREE.Mesh(srcGeo, srcMaterial);
+    // const srcDot = new THREE.Mesh(srcGeo, srcMaterial);
     // const srcDot = new THREE.InstancedMesh(srcGeo, srcMaterial, destNumber);
     // const sources = new THREE.Group();
     // const sourceGeo = new THREE.BufferGeometry();
@@ -250,45 +275,33 @@ const init: InitFn = ({
     const control = new THREE.Vector3();
     const destiantion = new THREE.Vector3();
 
-    const test = new THREE.Mesh(srcGeo, srcMaterial);
-    srcDot.applyMatrix4(points[100]);
-    test.applyMatrix4(points[1000]);
-
-    source.applyMatrix4(points[100]);
-    destiantion.applyMatrix4(points[1000]);
-    // const x =
-    //   Math.max(source.x, destiantion.x) - Math.min(source.x, destiantion.x) / 2;
-    // const y =
-    //   Math.max(source.y, destiantion.y) + Math.min(source.y, destiantion.y) / 2;
-    // const z =
-    //   Math.max(source.z, destiantion.z) - Math.min(source.z, destiantion.z) / 2;
-
-    const space = -Math.abs(source.x - destiantion.x) + source.y;
-
-    const x = (source.x + destiantion.x) / 2;
-    const y = space;
-    const z = (source.z + destiantion.z) / 2;
-    control.set(x, y, z);
-    console.log(source, destiantion, space);
-    const curve = new THREE.QuadraticBezierCurve3(
-      source.clone(), // source
-      control.clone(), // control
-      destiantion.clone() // destination
-    );
-    source.set(0, 0, 0);
-    destiantion.set(0, 0, 0);
-    control.set(0, 0, 0);
-    const linePoints = curve.getPoints(50);
-    const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
-    const curveObject = new THREE.Line(lineGeometry, lineMaterial);
-
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
       const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
       destDot.setMatrixAt(i, points[index]);
       destRing.setMatrixAt(i, points[index]);
       // srcDot.setMatrixAt(i, points[sourceIndex]);
+      source.applyMatrix4(points[sourceIndex]);
+      destiantion.applyMatrix4(points[index]);
+
+      const angle = source.angleTo(destiantion);
+      if (angle > 1) {
+        const { v1, v2 } = getBezierPoint(source, destiantion);
+      }
+      control.set(x, y, z);
+      const curve = new THREE.QuadraticBezierCurve3(
+        source.clone(), // source
+        control.clone(), // control
+        destiantion.clone() // destination
+      );
+      console.log(source, destiantion, control);
+      source.set(0, 0, 0);
+      destiantion.set(0, 0, 0);
+      control.set(0, 0, 0);
+      const linePoints = curve.getPoints(50);
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      const curveObject = new THREE.Line(lineGeometry, lineMaterial);
 
       // source.setFromMatrixPosition(points[sourceIndex]);
       // destiantion.setFromMatrixPosition(points[index]);
@@ -303,7 +316,7 @@ const init: InitFn = ({
       // const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
       // const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
       // const curveObject = new THREE.Line(lineGeometry, lineMaterial);
-      // parentContainer.add(curveObject);
+      parentContainer.add(curveObject);
     }
     destDot.renderOrder = 3;
     // Set order on the world dots
@@ -317,7 +330,7 @@ const init: InitFn = ({
       destRing.scale.y + 0.001,
       destRing.scale.z + 0.001
     );
-    parentContainer.add(srcDot, test, curveObject);
+    parentContainer.add(destDot, destRing);
   };
 
   // halo
