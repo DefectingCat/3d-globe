@@ -214,24 +214,96 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
 
-    // Destination dots
+    const destNumber = 10;
     const dotSize = worldDotSize * 3;
+    // Source dots
+    const srcGeo = new THREE.CircleGeometry(dotSize, 32);
+    const srcMaterial = new THREE.MeshStandardMaterial({
+      color: 0x00a2ff,
+      side: THREE.DoubleSide,
+    });
+    const srcDot = new THREE.Mesh(srcGeo, srcMaterial);
+    // const srcDot = new THREE.InstancedMesh(srcGeo, srcMaterial, destNumber);
+    // const sources = new THREE.Group();
+    // const sourceGeo = new THREE.BufferGeometry();
+    // const sourceDot = new THREE.InstancedMesh(
+    //   sourceGeo,
+    //   new THREE.Material(),
+    //   destNumber
+    // );
+
+    // Destination dots
     const destGeo = new THREE.CircleGeometry(dotSize, 32);
     const destMaterial = new THREE.MeshStandardMaterial({
       color: 0xffa2ff,
-      side: THREE.DoubleSide,
     });
-    const destNumber = 10;
     const destDot = new THREE.InstancedMesh(destGeo, destMaterial, destNumber);
 
     // Destination ring animation
     const ringGeo = new THREE.RingGeometry(dotSize, dotSize + 0.02, 32);
-    const destRing = new THREE.InstancedMesh(ringGeo, destMaterial, destNumber);
+    const ringMaterial = new THREE.MeshStandardMaterial({
+      color: 0xff0000,
+    });
+    const destRing = new THREE.InstancedMesh(ringGeo, ringMaterial, destNumber);
+
+    const source = new THREE.Vector3();
+    const control = new THREE.Vector3();
+    const destiantion = new THREE.Vector3();
+
+    const test = new THREE.Mesh(srcGeo, srcMaterial);
+    srcDot.applyMatrix4(points[100]);
+    test.applyMatrix4(points[1000]);
+
+    source.applyMatrix4(points[100]);
+    destiantion.applyMatrix4(points[1000]);
+    // const x =
+    //   Math.max(source.x, destiantion.x) - Math.min(source.x, destiantion.x) / 2;
+    // const y =
+    //   Math.max(source.y, destiantion.y) + Math.min(source.y, destiantion.y) / 2;
+    // const z =
+    //   Math.max(source.z, destiantion.z) - Math.min(source.z, destiantion.z) / 2;
+
+    const space = -Math.abs(source.x - destiantion.x) + source.y;
+
+    const x = (source.x + destiantion.x) / 2;
+    const y = space;
+    const z = (source.z + destiantion.z) / 2;
+    control.set(x, y, z);
+    console.log(source, destiantion, space);
+    const curve = new THREE.QuadraticBezierCurve3(
+      source.clone(), // source
+      control.clone(), // control
+      destiantion.clone() // destination
+    );
+    source.set(0, 0, 0);
+    destiantion.set(0, 0, 0);
+    control.set(0, 0, 0);
+    const linePoints = curve.getPoints(50);
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+    const curveObject = new THREE.Line(lineGeometry, lineMaterial);
 
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
+      const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
       destDot.setMatrixAt(i, points[index]);
       destRing.setMatrixAt(i, points[index]);
+      // srcDot.setMatrixAt(i, points[sourceIndex]);
+
+      // source.setFromMatrixPosition(points[sourceIndex]);
+      // destiantion.setFromMatrixPosition(points[index]);
+      // control.copy(source);
+      // control.setY(control.y + 10);
+      // const curve = new THREE.QuadraticBezierCurve3(
+      //   source, // source
+      //   control, // control
+      //   destiantion // destination
+      // );
+      // const linePoints = curve.getPoints(50);
+      // const lineGeometry = new THREE.BufferGeometry().setFromPoints(linePoints);
+      // const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      // const curveObject = new THREE.Line(lineGeometry, lineMaterial);
+      // parentContainer.add(curveObject);
     }
     destDot.renderOrder = 3;
     // Set order on the world dots
@@ -245,7 +317,7 @@ const init: InitFn = ({
       destRing.scale.y + 0.001,
       destRing.scale.z + 0.001
     );
-    parentContainer.add(destDot, destRing);
+    parentContainer.add(srcDot, test, curveObject);
   };
 
   // halo
@@ -288,7 +360,6 @@ const init: InitFn = ({
   haloContainer.add(halo2);
   camera.add(haloContainer);
 
-  // Update funtion
   const update = (time: number) => {};
   addRenderCallback(update);
 };
