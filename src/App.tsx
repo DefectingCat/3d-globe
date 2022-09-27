@@ -1,6 +1,8 @@
 import { useThree, THREE, InitFn } from 'rua-three';
 import world from 'assets/world.png';
 import { randomIntFromInterval } from 'utils';
+import TWEEN, { Tween } from '@tweenjs/tween.js';
+import { MeshLine } from 'meshline';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -27,7 +29,6 @@ function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
   // 控制点坐标
   const v1 = getLenVcetor(v0.clone(), vtop, aLen);
   const v2 = getLenVcetor(v3.clone(), vtop, aLen);
-  console.log(v1, v2);
   return {
     v1,
     v2,
@@ -307,11 +308,38 @@ const init: InitFn = ({
         // transparent: true,
       });
       const lineLength = { value: 0 };
-      // const line = new THREE.Line();
+      const line = new MeshLine();
+      const drawLineTween = new TWEEN.Tween(lineLength).to(
+        {
+          value: 100,
+        },
+        0
+      );
+      drawLineTween.onUpdate(() => {
+        console.log('test');
+        const vector = curvePoints.slice(0, lineLength.value + 1)[0];
+        line.setPoints([vector.x, vector.y, vector.z], (p) => 0.2 + p / 2);
+      });
+      const eraseLineTween = new TWEEN.Tween(lineLength).to({ value: 0 }, 3000);
+      eraseLineTween.onUpdate(() => {
+        // line.setPoints(
+        //   curvePoints.slice(
+        //     curvePoints.length - lineLength.value,
+        //     curvePoints.length
+        //   ) as unknown as number[],
+        //   (p: number) => 0.2 + p / 2
+        // );
+      });
+      drawLineTween.start();
+      setTimeout(() => {
+        eraseLineTween.start();
+      }, 6000);
+
       // const xRay = new THREE.Mesh(line, material);
-      const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
-      const line = new THREE.Line(geometry, material);
-      lines.add(line);
+      // const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
+      const lineMesh = new THREE.Mesh(line, material);
+      // const line = new THREE.Line(geometry, material);
+      lines.add(lineMesh);
     }
     destDot.renderOrder = 3;
     // Set order on the world dots
@@ -368,6 +396,11 @@ const init: InitFn = ({
   haloContainer.add(halo2);
   camera.add(haloContainer);
 
+  // function animate(time?: DOMHighResTimeStamp) {
+  //   window.requestAnimationFrame(animate);
+  //   TWEEN.update(time);
+  // }
+  // animate();
   const update = (time: number) => {};
   addRenderCallback(update);
 };
