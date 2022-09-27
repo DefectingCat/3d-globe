@@ -241,6 +241,7 @@ const init: InitFn = ({
     parentContainer.add(dots);
 
     const destNumber = 10;
+    const destColor = 0xf957ff;
     const dotSize = worldDotSize * 3;
     // Source dots
     const srcGeo = new THREE.CircleGeometry(dotSize, 32);
@@ -261,14 +262,14 @@ const init: InitFn = ({
     // Destination dots
     const destGeo = new THREE.CircleGeometry(dotSize, 32);
     const destMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffa2ff,
+      color: destColor,
     });
     const destDot = new THREE.InstancedMesh(destGeo, destMaterial, destNumber);
 
     // Destination ring animation
     const ringGeo = new THREE.RingGeometry(dotSize, dotSize + 0.02, 32);
     const ringMaterial = new THREE.MeshStandardMaterial({
-      color: 0xff0000,
+      color: destColor,
     });
     const destRing = new THREE.InstancedMesh(ringGeo, ringMaterial, destNumber);
 
@@ -300,9 +301,10 @@ const init: InitFn = ({
       if (!curve) continue;
       const curvePoints = curve.getPoints(100);
       const material = new THREE.LineBasicMaterial({
-        color: 0x00ddff,
-        opacity: 0.7,
-        transparent: true,
+        color: destColor,
+        linewidth: 1.6,
+        // opacity: 0.7,
+        // transparent: true,
       });
       const lineLength = { value: 0 };
       // const line = new THREE.Line();
