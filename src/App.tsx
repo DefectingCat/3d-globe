@@ -1,5 +1,6 @@
 import { useThree, THREE, InitFn } from 'rua-three';
 import world from 'assets/world.png';
+import { randomIntFromInterval } from 'utils';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -64,7 +65,7 @@ const init: InitFn = ({
   addRenderCallback,
 }) => {
   camera.position.set(0, 10, 100);
-  controls.enableZoom = false;
+  // controls.enableZoom = false;
   controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
 
@@ -189,7 +190,7 @@ const init: InitFn = ({
         points.push(point.matrix.clone());
       }
     }
-    const dot = new THREE.CircleGeometry(worldDotSize, 5);
+    const dot = new THREE.CircleGeometry(worldDotSize, 6);
     const dotMat = new THREE.MeshLambertMaterial({
       color: 3818644,
       // metalness: 0,
@@ -204,10 +205,33 @@ const init: InitFn = ({
     //   );
     // };
 
-    const dots = new THREE.InstancedMesh(dot, dotMat, points.length);
-    for (let l = 0; l < points.length; l++) dots.setMatrixAt(l, points[l]);
+    const pointsLen = points.length;
+    // Use InstancedMesh if you have to render a large number of objects
+    // with the same geometry and material but with different world transformations.
+    // World dots
+    const dots = new THREE.InstancedMesh(dot, dotMat, pointsLen);
+    for (let l = 0; l < pointsLen; l++) dots.setMatrixAt(l, points[l]);
     dots.renderOrder = 3;
     parentContainer.add(dots);
+
+    // Destination dot
+    const destGeo = new THREE.CircleGeometry(worldDotSize * 3, 12);
+    const destMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffa2ff,
+      side: THREE.DoubleSide,
+    });
+    const destNumber = 10;
+    const destDot = new THREE.InstancedMesh(destGeo, destMaterial, destNumber);
+    for (let i = 0; i < destNumber; i++)
+      destDot.setMatrixAt(i, points[randomIntFromInterval(0, pointsLen - 1)]);
+    destDot.renderOrder = 3;
+    // Set order on the world dots
+    destDot.scale.set(
+      destDot.scale.x + 0.001,
+      destDot.scale.y + 0.001,
+      destDot.scale.z + 0.001
+    );
+    parentContainer.add(destDot);
   };
 
   // halo
