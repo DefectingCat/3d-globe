@@ -2,7 +2,7 @@ import { useThree, THREE, InitFn } from 'rua-three';
 import world from 'assets/world.png';
 import { randomIntFromInterval } from 'utils';
 import TWEEN, { Tween } from '@tweenjs/tween.js';
-import { MeshLine } from 'meshline';
+import { MeshLine, MeshLineMaterial } from 'meshline';
 
 const GLOBE_RADIUS = 25;
 const DEG2RAD = Math.PI / 180;
@@ -10,6 +10,9 @@ const DEG2RAD = Math.PI / 180;
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
+/**
+ * 获取两个点之间
+ */
 function getVCenter(v1: THREE.Vector3, v2: THREE.Vector3) {
   const v = v1.add(v2);
   return v.divideScalar(2);
@@ -19,6 +22,7 @@ function getLenVcetor(v1: THREE.Vector3, v2: THREE.Vector3, len: number) {
   const v1v2Len = v1.distanceTo(v2);
   return v1.lerp(v2, len / v1v2Len);
 }
+
 function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
   const angle = (v0.angleTo(v3) * 45) / Math.PI; // 0 ~ Math.PI       // 计算向量夹角
   const aLen = angle;
@@ -95,8 +99,6 @@ const init: InitFn = ({
   // controls.enableZoom = false;
   controls.enablePan = false;
   scene.background = new THREE.Color(0x040d21);
-
-  const { width, height, x, y } = renderer.domElement.getBoundingClientRect();
 
   // Globe map
   const img = document.createElement('img');
@@ -241,15 +243,16 @@ const init: InitFn = ({
     dots.renderOrder = 3;
     parentContainer.add(dots);
 
+    // Destination dots params.
     const destNumber = 10;
     const destColor = 0xf957ff;
     const dotSize = worldDotSize * 3;
     // Source dots
-    const srcGeo = new THREE.CircleGeometry(dotSize, 32);
-    const srcMaterial = new THREE.MeshStandardMaterial({
-      color: 0x00a2ff,
-      side: THREE.DoubleSide,
-    });
+    // const srcGeo = new THREE.CircleGeometry(dotSize, 32);
+    // const srcMaterial = new THREE.MeshStandardMaterial({
+    //   color: 0x00a2ff,
+    //   side: THREE.DoubleSide,
+    // });
     // const srcDot = new THREE.Mesh(srcGeo, srcMaterial);
     // const srcDot = new THREE.InstancedMesh(srcGeo, srcMaterial, destNumber);
     // const sources = new THREE.Group();
@@ -301,44 +304,37 @@ const init: InitFn = ({
       }
       if (!curve) continue;
       const curvePoints = curve.getPoints(100);
-      const material = new THREE.LineBasicMaterial({
-        color: destColor,
-        linewidth: 1.6,
-        // opacity: 0.7,
-        // transparent: true,
-      });
+      const material = new MeshLineMaterial();
       const lineLength = { value: 0 };
       const line = new MeshLine();
       const drawLineTween = new TWEEN.Tween(lineLength).to(
         {
           value: 100,
         },
-        0
+        3000
       );
       drawLineTween.onUpdate(() => {
-        console.log('test');
-        const vector = curvePoints.slice(0, lineLength.value + 1)[0];
-        line.setPoints([vector.x, vector.y, vector.z], (p) => 0.2 + p / 2);
+        line.setPoints(
+          curvePoints.slice(0, lineLength.value + 1) as unknown as number[],
+          (p) => 0.2 + p / 2
+        );
       });
       const eraseLineTween = new TWEEN.Tween(lineLength).to({ value: 0 }, 3000);
       eraseLineTween.onUpdate(() => {
-        // line.setPoints(
-        //   curvePoints.slice(
-        //     curvePoints.length - lineLength.value,
-        //     curvePoints.length
-        //   ) as unknown as number[],
-        //   (p: number) => 0.2 + p / 2
-        // );
+        line.setPoints(
+          curvePoints.slice(
+            curvePoints.length - lineLength.value,
+            curvePoints.length
+          ) as unknown as number[],
+          (p: number) => 0.2 + p / 2
+        );
       });
       drawLineTween.start();
       setTimeout(() => {
         eraseLineTween.start();
       }, 6000);
 
-      // const xRay = new THREE.Mesh(line, material);
-      // const geometry = new THREE.BufferGeometry().setFromPoints(curvePoints);
       const lineMesh = new THREE.Mesh(line, material);
-      // const line = new THREE.Line(geometry, material);
       lines.add(lineMesh);
     }
     destDot.renderOrder = 3;
@@ -396,12 +392,9 @@ const init: InitFn = ({
   haloContainer.add(halo2);
   camera.add(haloContainer);
 
-  // function animate(time?: DOMHighResTimeStamp) {
-  //   window.requestAnimationFrame(animate);
-  //   TWEEN.update(time);
-  // }
-  // animate();
-  const update = (time: number) => {};
+  const update = (time: number) => {
+    TWEEN.update(time / 0.001);
+  };
   addRenderCallback(update);
 };
 
