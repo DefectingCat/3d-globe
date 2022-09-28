@@ -1,100 +1,23 @@
 import { useThree, THREE, InitFn } from 'rua-three';
 import world from 'assets/world.png';
-import { randomIntFromInterval } from 'utils';
-import TWEEN, { Tween } from '@tweenjs/tween.js';
+import {
+  calcPos,
+  DEG2RAD,
+  getBezierPoint,
+  getImageData,
+  getVCenter,
+  randomIntFromInterval,
+  visibilityForCoordinate,
+} from 'utils';
+import TWEEN from '@tweenjs/tween.js';
 import { MeshLine, MeshLineMaterial } from 'meshline';
 
 const GLOBE_RADIUS = 25;
-const DEG2RAD = Math.PI / 180;
 // Globe map 的纵向像素
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
-/**
- * 获取两个点之间
- */
-function getVCenter(v1: THREE.Vector3, v2: THREE.Vector3) {
-  const v = v1.add(v2);
-  return v.divideScalar(2);
-}
-
-function getLenVcetor(v1: THREE.Vector3, v2: THREE.Vector3, len: number) {
-  const v1v2Len = v1.distanceTo(v2);
-  return v1.lerp(v2, len / v1v2Len);
-}
-
-function getBezierPoint(v0: THREE.Vector3, v3: THREE.Vector3) {
-  const angle = (v0.angleTo(v3) * 45) / Math.PI; // 0 ~ Math.PI       // 计算向量夹角
-  const aLen = angle;
-  const p0 = new THREE.Vector3(0, 0, 0); // 法线向量
-  const rayLine = new THREE.Ray(p0, getVCenter(v0.clone(), v3.clone())); // 顶点坐标
-  const vtop = new THREE.Vector3(0, 0, 0); // 法线向量
-  rayLine.at(100, vtop); // 位置
-  // 控制点坐标
-  const v1 = getLenVcetor(v0.clone(), vtop, aLen);
-  const v2 = getLenVcetor(v3.clone(), vtop, aLen);
-  return {
-    v1,
-    v2,
-  };
-}
-
-/**
- * 从 canvas 获取 ImageData
- */
-const getImageData = (img: HTMLImageElement) => {
-  const ctx = document.createElement('canvas').getContext('2d');
-  if (!ctx?.canvas) return;
-  ctx.canvas.width = img.width;
-  ctx.canvas.height = img.height;
-  ctx.drawImage(img, 0, 0, img.width, img.height);
-  return ctx.getImageData(0, 0, img.width, img.height);
-};
-
-/**
- * 检测是当前 UV 是否有像素
- */
-const visibilityForCoordinate = (
-  lng: number,
-  lat: number,
-  data: ImageData | undefined
-) => {
-  if (!data) return;
-  const i = 4 * data.width;
-  const r = parseInt((((lng + 180) / 360) * data.width + 0.5).toString());
-  const a =
-    data.height - parseInt((((lat + 90) / 180) * data.height - 0.5).toString());
-  const s = parseInt((i * (a - 1) + 4 * r).toString()) + 3;
-  return data.data[s] > 90;
-};
-
-/**
- * 计算 UV 到 Vector3
- */
-const calcPos = (
-  lat: number,
-  lng: number,
-  radius: number,
-  vec?: THREE.Vector3
-) => {
-  const _vec = vec ?? new THREE.Vector3();
-  const v = (90 - lat) * DEG2RAD;
-  const h = (lng + 180) * DEG2RAD;
-  _vec.set(
-    -radius * Math.sin(v) * Math.cos(h),
-    radius * Math.cos(v),
-    radius * Math.sin(v) * Math.sin(h)
-  );
-  return _vec;
-};
-
-const init: InitFn = ({
-  scene,
-  camera,
-  controls,
-  renderer,
-  addRenderCallback,
-}) => {
+const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
   camera.position.set(0, 10, 100);
   // controls.enableZoom = false;
   controls.enablePan = false;
