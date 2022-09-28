@@ -11,7 +11,8 @@ import {
 } from 'utils';
 import TWEEN from '@tweenjs/tween.js';
 import { MeshLine, MeshLineMaterial } from 'meshline';
-import { linkSync } from 'fs';
+import haloVertex from './lib/shaders/haloVertex.glsl';
+import haloFragment from './lib/shaders/haloFragment.glsl';
 
 const GLOBE_RADIUS = 25;
 // Globe map 的纵向像素
@@ -254,7 +255,6 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
       const lineMesh = new THREE.Mesh(line, material);
       links.add(lineMesh);
     }
-
     parentContainer.add(links);
   };
 
@@ -274,17 +274,14 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
         value: new THREE.Vector3(0, 0, 220),
       },
     },
-    vertexShader:
-      '#define GLSLIFY 1\nuniform vec3 viewVector;\nuniform float c;\nuniform float p;\nvarying float intensity;\nvarying float intensityA;\nvoid main() \n{\n  vec3 vNormal = normalize( normalMatrix * normal );\n  vec3 vNormel = normalize( normalMatrix * viewVector );\n  intensity = pow( c - dot(vNormal, vNormel), p );\n  intensityA = pow( 0.63 - dot(vNormal, vNormel), p );\n  \n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}',
-    fragmentShader:
-      '#define GLSLIFY 1\nuniform vec3 glowColor;\nvarying float intensity;\nvarying float intensityA;\nvoid main()\n{\n  gl_FragColor = vec4( glowColor * intensity, 1.0 * intensityA );\n}',
+    vertexShader: haloVertex,
+    fragmentShader: haloFragment,
     side: 2,
     blending: 2,
     transparent: !0,
     dithering: !0,
   });
   const halo = new THREE.Mesh(spGeo, haloMaterial);
-  // halo2.scale.multiplyScalar(1.1);
   halo.position.set(0, 0, -91);
   halo.rotateY(0.05 * Math.PI);
   halo.rotateX(0.05 * Math.PI);
@@ -292,6 +289,7 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
   haloContainer.add(halo);
   camera.add(haloContainer);
 
+  // requestAnimationFrame callback
   const update = (time: number) => {
     TWEEN.update(time / 0.001);
   };
