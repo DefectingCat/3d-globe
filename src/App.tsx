@@ -17,6 +17,10 @@ const GLOBE_RADIUS = 25;
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
+const destNumber = 10;
+const destColor = 0xf957ff;
+const dotSize = worldDotSize * 3;
+
 const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
   camera.position.set(0, 10, 100);
   // controls.enableZoom = false;
@@ -37,19 +41,6 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
   scene.add(parentContainer);
 
   const haloContainer = new THREE.Group();
-
-  // Globe water
-  // const shadowPoint = new THREE.Vector3()
-  //   .copy(parentContainer.position)
-  //   .add(
-  //     new THREE.Vector3(0.7 * GLOBE_RADIUS, 0.3 * -GLOBE_RADIUS, GLOBE_RADIUS)
-  //   );
-  // const highlightPoint = new THREE.Vector3()
-  //   .copy(parentContainer.position)
-  //   .add(new THREE.Vector3(1.5 * -GLOBE_RADIUS, 1.5 * -GLOBE_RADIUS, 0));
-  // const frontPoint = new THREE.Vector3()
-  //   .copy(parentContainer.position)
-  //   .add(new THREE.Vector3(0, 0, GLOBE_RADIUS));
 
   // Globe
   const spGeo = new THREE.SphereGeometry(GLOBE_RADIUS, 55, 55);
@@ -145,17 +136,9 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
     const dot = new THREE.CircleGeometry(worldDotSize, 6);
     const dotMat = new THREE.MeshLambertMaterial({
       color: 3818644,
-      // metalness: 0,
-      // roughness: 0.9,
       transparent: !0,
       alphaTest: 0.02,
     });
-    // dotMat.onBeforeCompile = (t) => {
-    //   t.fragmentShader = t.fragmentShader.replace(
-    //     'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
-    //     '\n        gl_FragColor = vec4( outgoingLight, diffuseColor.a );\n        if (gl_FragCoord.z > 0.51) {\n          gl_FragColor.a = 1.0 + ( 0.51 - gl_FragCoord.z ) * 17.0;\n        }\n      '
-    //   );
-    // };
 
     const pointsLen = points.length;
     // Use InstancedMesh if you have to render a large number of objects
@@ -165,26 +148,6 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
     for (let l = 0; l < pointsLen; l++) dots.setMatrixAt(l, points[l]);
     dots.renderOrder = 3;
     parentContainer.add(dots);
-
-    // Destination dots params.
-    const destNumber = 10;
-    const destColor = 0xf957ff;
-    const dotSize = worldDotSize * 3;
-    // Source dots
-    // const srcGeo = new THREE.CircleGeometry(dotSize, 32);
-    // const srcMaterial = new THREE.MeshStandardMaterial({
-    //   color: 0x00a2ff,
-    //   side: THREE.DoubleSide,
-    // });
-    // const srcDot = new THREE.Mesh(srcGeo, srcMaterial);
-    // const srcDot = new THREE.InstancedMesh(srcGeo, srcMaterial, destNumber);
-    // const sources = new THREE.Group();
-    // const sourceGeo = new THREE.BufferGeometry();
-    // const sourceDot = new THREE.InstancedMesh(
-    //   sourceGeo,
-    //   new THREE.Material(),
-    //   destNumber
-    // );
 
     // Destination dots
     const destGeo = new THREE.CircleGeometry(dotSize, 32);
@@ -204,13 +167,14 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
       const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
-      destDot.setMatrixAt(i, points[index]);
-      destRing.setMatrixAt(i, points[index]);
+      // destDot.setMatrixAt(i, points[index]);
+      // destRing.setMatrixAt(i, points[index]);
 
       const source = new THREE.Vector3();
       const destiantion = new THREE.Vector3();
       source.applyMatrix4(points[sourceIndex]);
       destiantion.applyMatrix4(points[index]);
+
       let curve;
       const angle = source.angleTo(destiantion);
       if (angle > 1) {
@@ -227,7 +191,11 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
       }
       if (!curve) continue;
       const curvePoints = curve.getPoints(100);
-      const material = new MeshLineMaterial();
+      const material = new MeshLineMaterial({
+        color: destColor,
+        lineWidth: 0.3,
+        resolution: new THREE.Vector2(100, 100),
+      });
       const lineLength = { value: 0 };
       const line = new MeshLine();
       const drawLineTween = new TWEEN.Tween(lineLength).to(
@@ -238,28 +206,77 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
       );
       drawLineTween.onUpdate(() => {
         line.setPoints(
-          curvePoints.slice(0, lineLength.value + 1) as unknown as number[],
+          curvePoints
+            .slice(0, lineLength.value + 1)
+            .flatMap((p) => p.toArray()),
           (p) => 0.2 + p / 2
         );
       });
-      const eraseLineTween = new TWEEN.Tween(lineLength).to({ value: 0 }, 3000);
-      eraseLineTween.onUpdate(() => {
-        line.setPoints(
-          curvePoints.slice(
-            curvePoints.length - lineLength.value,
-            curvePoints.length
-          ) as unknown as number[],
-          (p: number) => 0.2 + p / 2
-        );
-      });
-      drawLineTween.start();
+      const eraseLineTween = new TWEEN.Tween(lineLength)
+        .to({ value: 0 }, 3000)
+        .onUpdate(() => {
+          line.setPoints(
+            curvePoints
+              .slice(curvePoints.length - lineLength.value, curvePoints.length)
+              .flatMap((p) => p.toArray()),
+            (p: number) => 0.2 + p / 2
+          );
+        })
+        .start();
       setTimeout(() => {
         eraseLineTween.start();
       }, 6000);
 
       const lineMesh = new THREE.Mesh(line, material);
       lines.add(lineMesh);
+
+      const outter = new THREE.RingGeometry(dotSize, dotSize + 0.04, 32);
+      const materialOutter = new THREE.MeshBasicMaterial({
+        color: destColor,
+        side: THREE.DoubleSide,
+        opacity: 0,
+        transparent: true,
+      });
+      const ringOutter = new THREE.Mesh(outter, materialOutter);
+      ringOutter.applyMatrix4(points[index]);
+      const ringScale = { scale: 1, opacity: 1 };
+      const drawRingTween = new TWEEN.Tween(ringScale)
+        .to(
+          {
+            scale: 3,
+            opacity: 0.2,
+          },
+          1000
+        )
+        .onUpdate(() => {
+          materialOutter.opacity = ringScale.opacity;
+          ringOutter.scale.set(
+            ringScale.scale,
+            ringScale.scale,
+            ringScale.scale
+          );
+        });
+      const drawRingBack = new TWEEN.Tween(ringScale)
+        .to(
+          {
+            opacity: 0,
+          },
+          400
+        )
+        .onUpdate(() => {
+          materialOutter.opacity = ringScale.opacity;
+        })
+        .onComplete(() => {
+          ringOutter.scale.set(0, 0, 0);
+        });
+
+      drawRingTween
+        .easing(TWEEN.Easing.Circular.Out)
+        .chain(drawRingBack.easing(TWEEN.Easing.Circular.In))
+        .start();
+      lines.add(ringOutter);
     }
+
     destDot.renderOrder = 3;
     // Set order on the world dots
     destDot.scale.set(
@@ -272,7 +289,8 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
       destRing.scale.y + 0.001,
       destRing.scale.z + 0.001
     );
-    parentContainer.add(destDot, destRing, lines);
+
+    parentContainer.add(lines);
   };
 
   // halo
