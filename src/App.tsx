@@ -90,11 +90,20 @@ const App = () => {
     scene.add(camera);
 
     // Dots
-    const linkInstance: LinkLine[] = [];
+    // const createLines = (num: number) => {
+    //   (new Array(num)).fill(null).forEach((_, i) => )
+    // }
+    // 线条动画是否初始化完成
+    let lineDone = false;
+    // 动画线条实例
+    let linkInstance: LinkLine[] = [];
+    // 动画线条
+    const links = new THREE.Group();
+    // 地图上的点
+    const points: THREE.Matrix4[] = [];
     img.onload = () => {
       const point = new THREE.Object3D();
       const imgData = getImageData(img);
-      const points: THREE.Matrix4[] = [];
       for (let lat = -90; lat <= 90; lat += 180 / worldDotRows) {
         const radius = Math.cos(Math.abs(lat) * DEG2RAD) * GLOBE_RADIUS;
         const circum = radius * Math.PI * 2 * 2;
@@ -125,7 +134,6 @@ const App = () => {
       dots.renderOrder = 3;
       parentContainer.add(dots);
 
-      const links = new THREE.Group();
       for (let i = 0; i < destNumber; i++) {
         const index = randomIntFromInterval(0, pointsLen - 1);
         const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
@@ -148,6 +156,7 @@ const App = () => {
         linkInstance.push(linkLine);
       }
       parentContainer.add(links);
+      lineDone = true;
     };
 
     // halo
@@ -226,6 +235,37 @@ const App = () => {
     const update = (time: number) => {
       TWEEN.update(time / 0.001);
       pickLink(time);
+
+      if (!lineDone) return;
+      const done = linkInstance.filter((item) => item.animateDone);
+      done.forEach((item) => {
+        links.remove(item.destDot.mesh, item.destRing.mesh, item.line.mesh);
+      });
+      linkInstance = linkInstance.filter((item) => !item.animateDone);
+      if (linkInstance.length < 8) {
+        const pointsLen = points.length;
+        for (let i = 0; i < destNumber; i++) {
+          const index = randomIntFromInterval(0, pointsLen - 1);
+          const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
+          const delay = randomIntFromInterval(0, 500);
+
+          const linkLine = new LinkLine(
+            points[sourceIndex],
+            points[index],
+            destColor,
+            dotSize
+          );
+          setTimeout(() => {
+            linkLine.start();
+          }, delay * i);
+          links.add(
+            linkLine.destDot.mesh,
+            linkLine.destRing.mesh,
+            linkLine.line.mesh
+          );
+          linkInstance.push(linkLine);
+        }
+      }
     };
     addRenderCallback(update);
 

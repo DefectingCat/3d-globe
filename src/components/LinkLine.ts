@@ -127,6 +127,7 @@ export class Line {
   mesh: THREE.Mesh<MeshLine, MeshLineMaterial>;
   material: MeshLineMaterial;
   private line: MeshLine;
+  private curve: THREE.CubicBezierCurve3 | THREE.QuadraticBezierCurve3;
 
   draw: Tween<{
     value: number;
@@ -143,11 +144,15 @@ export class Line {
     public destDot: Dot,
     public destRing: Ring
   ) {
-    let curve;
     const angle = this.source.angleTo(this.destination);
     if (angle > 1) {
       const { v1, v2 } = getBezierPoint(source, this.destination);
-      curve = new THREE.CubicBezierCurve3(source, v1, v2, this.destination);
+      this.curve = new THREE.CubicBezierCurve3(
+        source,
+        v1,
+        v2,
+        this.destination
+      );
     } else {
       const p = new THREE.Vector3(0, 0, 0);
       const rayLine = new THREE.Ray(
@@ -155,9 +160,13 @@ export class Line {
         getVCenter(this.source.clone(), this.destination.clone())
       );
       const vtop = rayLine.at(1.3, new THREE.Vector3());
-      curve = new THREE.QuadraticBezierCurve3(source, vtop, this.destination);
+      this.curve = new THREE.QuadraticBezierCurve3(
+        source,
+        vtop,
+        this.destination
+      );
     }
-    const curvePoints = curve.getPoints(100);
+    const curvePoints = this.curve.getPoints(100);
     this.material = new MeshLineMaterial({
       color: this.color,
       lineWidth: 0.3,
@@ -205,10 +214,6 @@ export class Line {
             .flatMap((p) => p.toArray()),
           (p: number) => 0.2 + p / 2
         );
-      })
-      .onComplete(() => {
-        this.destDot.material.opacity = 0;
-        this.destDot.mesh.scale.set(0, 0, 0);
       });
 
     this.mesh = new THREE.Mesh(this.line, this.material);
@@ -241,6 +246,8 @@ class LinkLine {
 
   paused = false;
 
+  animateDone = false;
+
   /**
    * 线条的 mesh uuid
    * 用于识别线条暂停动画
@@ -272,6 +279,15 @@ class LinkLine {
 
   start() {
     this.line.draw.start();
+    this.line.drawBack.onComplete(() => {
+      this.destDot.material.opacity = 0;
+      this.destDot.mesh.scale.set(0, 0, 0);
+      this.animateDone = true;
+      this.dispose();
+    });
+  }
+  startBack() {
+    this.line.drawBack.start();
   }
 
   resume() {
