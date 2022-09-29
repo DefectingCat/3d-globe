@@ -16,7 +16,7 @@
     "react-dom": "^18.2.0",
     "react-router": "^6.4.1",
     "react-router-dom": "^6.4.1",
-    "rua-three": "^1.0.4",
+    "rua-three": "^1.0.5",
     "stats.js": "^0.17.0",
     "three": "^0.144.0"
   },
