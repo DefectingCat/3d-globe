@@ -9,20 +9,26 @@ import { getBezierPoint, getVCenter, randomIntFromInterval } from 'utils';
 export class Dot {
   mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshStandardMaterial>;
   material: THREE.MeshStandardMaterial;
+  geometry: THREE.CircleGeometry;
 
   constructor(
     public destination: THREE.Matrix4,
     public color: number | string,
     public size: number
   ) {
-    const destGeo = new THREE.CircleGeometry(this.size, 32);
+    this.geometry = new THREE.CircleGeometry(this.size, 32);
     this.material = new THREE.MeshStandardMaterial({
       color: this.color,
       opacity: 0,
       transparent: true,
     });
-    this.mesh = new THREE.Mesh(destGeo, this.material);
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.applyMatrix4(this.destination);
+  }
+
+  dispose() {
+    this.material.dispose();
+    this.geometry.dispose();
   }
 }
 
@@ -31,6 +37,8 @@ export class Dot {
  */
 export class Ring {
   mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  geometry: THREE.RingGeometry;
+  material: THREE.MeshBasicMaterial;
 
   /**
    * 开始动画
@@ -58,15 +66,15 @@ export class Ring {
     public color: number | string,
     public size: number
   ) {
-    const outter = new THREE.RingGeometry(this.size, this.size + 0.05, 32);
-    const materialOutter = new THREE.MeshBasicMaterial({
+    this.geometry = new THREE.RingGeometry(this.size, this.size + 0.05, 32);
+    this.material = new THREE.MeshBasicMaterial({
       color: this.color,
       side: THREE.DoubleSide,
       opacity: 0,
       transparent: true,
     });
 
-    this.mesh = new THREE.Mesh(outter, materialOutter);
+    this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.applyMatrix4(this.destination);
     this.draw = new TWEEN.Tween(this.ringScale)
       .to(
@@ -77,7 +85,7 @@ export class Ring {
         700
       )
       .onUpdate(() => {
-        materialOutter.opacity = this.ringScale.opacity;
+        this.material.opacity = this.ringScale.opacity;
         this.mesh.scale.set(
           this.ringScale.scale,
           this.ringScale.scale,
@@ -92,7 +100,7 @@ export class Ring {
         100
       )
       .onUpdate(() => {
-        materialOutter.opacity = this.ringScale.opacity;
+        this.material.opacity = this.ringScale.opacity;
       })
       .onComplete(() => {
         this.mesh.scale.set(0, 0, 0);
@@ -108,10 +116,18 @@ export class Ring {
     this.draw.resume();
     this.drawBack.resume();
   }
+
+  dispose() {
+    this.material.dispose();
+    this.geometry.dispose();
+  }
 }
 
 export class Line {
   mesh: THREE.Mesh<MeshLine, MeshLineMaterial>;
+  material: MeshLineMaterial;
+  private line: MeshLine;
+
   draw: Tween<{
     value: number;
   }>;
@@ -142,14 +158,14 @@ export class Line {
       curve = new THREE.QuadraticBezierCurve3(source, vtop, this.destination);
     }
     const curvePoints = curve.getPoints(100);
-    const material = new MeshLineMaterial({
+    this.material = new MeshLineMaterial({
       color: this.color,
       lineWidth: 0.3,
       resolution: new THREE.Vector2(100, 100),
       opacity: 0.8,
     });
     const lineLength = { value: 0 };
-    const line = new MeshLine();
+    this.line = new MeshLine();
     this.draw = new TWEEN.Tween(lineLength)
       .to(
         {
@@ -158,7 +174,7 @@ export class Line {
         3000
       )
       .onUpdate(() => {
-        line.setPoints(
+        this.line.setPoints(
           curvePoints
             .slice(0, lineLength.value + 1)
             .flatMap((p) => p.toArray()),
@@ -183,7 +199,7 @@ export class Line {
     this.drawBack = new TWEEN.Tween(lineLength)
       .to({ value: 0 }, 3000)
       .onUpdate(() => {
-        line.setPoints(
+        this.line.setPoints(
           curvePoints
             .slice(curvePoints.length - lineLength.value, curvePoints.length)
             .flatMap((p) => p.toArray()),
@@ -195,7 +211,7 @@ export class Line {
         this.destDot.mesh.scale.set(0, 0, 0);
       });
 
-    this.mesh = new THREE.Mesh(line, material);
+    this.mesh = new THREE.Mesh(this.line, this.material);
     this.mesh.raycast = MeshLineRaycast;
   }
 
@@ -207,6 +223,11 @@ export class Line {
   resume() {
     this.draw.resume();
     this.drawBack.resume();
+  }
+
+  dispose() {
+    this.material.dispose();
+    this.line.dispose();
   }
 }
 
@@ -264,6 +285,12 @@ class LinkLine {
     this.destRing.pause();
     this.line.pause();
     this.paused = true;
+  }
+
+  dispose() {
+    this.destDot.dispose();
+    this.destRing.dispose();
+    this.line.dispose();
   }
 }
 
