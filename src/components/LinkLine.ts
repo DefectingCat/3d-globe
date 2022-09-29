@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import TWEEN, { Tween } from '@tweenjs/tween.js';
-import { MeshLineMaterial, MeshLine } from 'meshline';
+import { MeshLineMaterial, MeshLine, MeshLineRaycast } from 'meshline';
 import { getBezierPoint, getVCenter } from 'utils';
 
 /**
@@ -136,7 +136,7 @@ export class Line {
       const p = new THREE.Vector3(0, 0, 0);
       const rayLine = new THREE.Ray(
         p,
-        getVCenter(source.clone(), this.destination.clone())
+        getVCenter(this.source.clone(), this.destination.clone())
       );
       const vtop = rayLine.at(1.3, new THREE.Vector3());
       curve = new THREE.QuadraticBezierCurve3(source, vtop, this.destination);
@@ -176,9 +176,9 @@ export class Line {
           .easing(TWEEN.Easing.Circular.Out)
           .chain(this.destRing.drawBack.easing(TWEEN.Easing.Circular.In))
           .start();
-        setTimeout(() => {
-          this.drawBack.start();
-        }, 2000);
+        // setTimeout(() => {
+        //   this.drawBack.start();
+        // }, 2000);
       });
     this.drawBack = new TWEEN.Tween(lineLength)
       .to({ value: 0 }, 3000)
@@ -196,6 +196,7 @@ export class Line {
       });
 
     this.mesh = new THREE.Mesh(line, material);
+    this.mesh.raycast = MeshLineRaycast;
   }
 
   pause() {
@@ -219,6 +220,12 @@ class LinkLine {
 
   paused = false;
 
+  /**
+   * 线条的 mesh uuid
+   * 用于识别线条暂停动画
+   */
+  uuid: string;
+
   constructor(
     public source: THREE.Matrix4,
     public destination: THREE.Matrix4,
@@ -239,6 +246,7 @@ class LinkLine {
       this.destDot,
       this.destRing
     );
+    this.uuid = this.line.mesh.uuid;
   }
 
   start() {
