@@ -1,7 +1,7 @@
-import * as THREE from 'three';
 import TWEEN, { Tween } from '@tweenjs/tween.js';
-import { MeshLineMaterial, MeshLine, MeshLineRaycast } from 'meshline';
-import { getBezierPoint, getVCenter, randomIntFromInterval } from 'utils';
+import { MeshLine, MeshLineMaterial, MeshLineRaycast } from 'meshline';
+import * as THREE from 'three';
+import { getBezierPoint, getVCenter } from 'utils';
 
 /**
  * 目标地点的圆点
@@ -123,15 +123,25 @@ export class Ring {
   }
 }
 
+/**
+ * 线条动画
+ */
 export class Line {
   mesh: THREE.Mesh<MeshLine, MeshLineMaterial>;
   material: MeshLineMaterial;
   private line: MeshLine;
   private curve: THREE.CubicBezierCurve3 | THREE.QuadraticBezierCurve3;
 
+  /**
+   * 开始动画
+   */
   draw: Tween<{
     value: number;
   }>;
+
+  /**
+   * 结束动画
+   */
   drawBack: Tween<{
     value: number;
   }>;
@@ -166,6 +176,7 @@ export class Line {
         this.destination
       );
     }
+
     const curvePoints = this.curve.getPoints(100);
     this.material = new MeshLineMaterial({
       color: this.color,
@@ -173,6 +184,7 @@ export class Line {
       resolution: new THREE.Vector2(100, 100),
       opacity: 0.8,
     });
+
     const lineLength = { value: 0 };
     this.line = new MeshLine();
     this.draw = new TWEEN.Tween(lineLength)
@@ -201,10 +213,13 @@ export class Line {
           .easing(TWEEN.Easing.Circular.Out)
           .chain(this.destRing.drawBack.easing(TWEEN.Easing.Circular.In))
           .start();
+
+        // 开始动画结束 2s 后开始结束动画
         setTimeout(() => {
           this.drawBack.start();
         }, 2000);
       });
+
     this.drawBack = new TWEEN.Tween(lineLength)
       .to({ value: 0 }, 3000)
       .onUpdate(() => {
@@ -217,6 +232,7 @@ export class Line {
       });
 
     this.mesh = new THREE.Mesh(this.line, this.material);
+    // 鼠标拾取
     this.mesh.raycast = MeshLineRaycast;
   }
 
@@ -237,15 +253,28 @@ export class Line {
 }
 
 class LinkLine {
+  /**
+   * 线条起点
+   */
   protected p0 = new THREE.Vector3();
+
+  /**
+   * 线条落点
+   */
   protected p4 = new THREE.Vector3();
 
   destDot: Dot;
   destRing: Ring;
   line: Line;
 
+  /**
+   * 动画是否暂停
+   */
   paused = false;
 
+  /**
+   * 线条动画是否结束
+   */
   animateDone = false;
 
   /**
@@ -265,7 +294,6 @@ class LinkLine {
 
     this.destDot = new Dot(destination, color, size);
     this.destRing = new Ring(destination, color, size);
-
     this.line = new Line(
       this.p0,
       this.p4,
@@ -274,11 +302,13 @@ class LinkLine {
       this.destDot,
       this.destRing
     );
+
     this.uuid = this.line.mesh.uuid;
   }
 
   start() {
     this.line.draw.start();
+    // 动画结束后销毁自身
     this.line.drawBack.onComplete(() => {
       this.destDot.material.opacity = 0;
       this.destDot.mesh.scale.set(0, 0, 0);
