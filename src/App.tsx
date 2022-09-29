@@ -121,13 +121,17 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
       const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
+      const delay = randomIntFromInterval(0, 500);
+
       const linkLine = new LinkLine(
         points[sourceIndex],
         points[index],
         destColor,
         dotSize
       );
-      linkLine.start();
+      setTimeout(() => {
+        linkLine.start();
+      }, delay * i);
       links.add(
         linkLine.destDot.mesh,
         linkLine.destRing.mesh,

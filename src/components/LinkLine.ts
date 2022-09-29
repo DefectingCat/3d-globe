@@ -179,8 +179,7 @@ export class Line {
         setTimeout(() => {
           this.drawBack.start();
         }, 2000);
-      })
-      .start();
+      });
     this.drawBack = new TWEEN.Tween(lineLength)
       .to({ value: 0 }, 3000)
       .onUpdate(() => {
