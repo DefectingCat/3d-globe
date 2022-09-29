@@ -90,9 +90,6 @@ const App = () => {
     scene.add(camera);
 
     // Dots
-    // const createLines = (num: number) => {
-    //   (new Array(num)).fill(null).forEach((_, i) => )
-    // }
     // 线条动画是否初始化完成
     let lineDone = false;
     // 动画线条实例
@@ -101,6 +98,31 @@ const App = () => {
     const links = new THREE.Group();
     // 地图上的点
     const points: THREE.Matrix4[] = [];
+
+    const createLines = (num: number) => {
+      const pointsLen = points.length;
+      for (let i = 0; i < num; i++) {
+        const index = randomIntFromInterval(0, pointsLen - 1);
+        const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
+        const delay = randomIntFromInterval(0, 500);
+
+        const linkLine = new LinkLine(
+          points[sourceIndex],
+          points[index],
+          destColor,
+          dotSize
+        );
+        setTimeout(() => {
+          linkLine.start();
+        }, delay * i);
+        links.add(
+          linkLine.destDot.mesh,
+          linkLine.destRing.mesh,
+          linkLine.line.mesh
+        );
+        linkInstance.push(linkLine);
+      }
+    };
     img.onload = () => {
       const point = new THREE.Object3D();
       const imgData = getImageData(img);
@@ -134,27 +156,7 @@ const App = () => {
       dots.renderOrder = 3;
       parentContainer.add(dots);
 
-      for (let i = 0; i < destNumber; i++) {
-        const index = randomIntFromInterval(0, pointsLen - 1);
-        const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
-        const delay = randomIntFromInterval(0, 500);
-
-        const linkLine = new LinkLine(
-          points[sourceIndex],
-          points[index],
-          destColor,
-          dotSize
-        );
-        setTimeout(() => {
-          linkLine.start();
-        }, delay * i);
-        links.add(
-          linkLine.destDot.mesh,
-          linkLine.destRing.mesh,
-          linkLine.line.mesh
-        );
-        linkInstance.push(linkLine);
-      }
+      createLines(destNumber);
       parentContainer.add(links);
       lineDone = true;
     };
@@ -242,30 +244,7 @@ const App = () => {
         links.remove(item.destDot.mesh, item.destRing.mesh, item.line.mesh);
       });
       linkInstance = linkInstance.filter((item) => !item.animateDone);
-      if (linkInstance.length < 8) {
-        const pointsLen = points.length;
-        for (let i = 0; i < destNumber; i++) {
-          const index = randomIntFromInterval(0, pointsLen - 1);
-          const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
-          const delay = randomIntFromInterval(0, 500);
-
-          const linkLine = new LinkLine(
-            points[sourceIndex],
-            points[index],
-            destColor,
-            dotSize
-          );
-          setTimeout(() => {
-            linkLine.start();
-          }, delay * i);
-          links.add(
-            linkLine.destDot.mesh,
-            linkLine.destRing.mesh,
-            linkLine.line.mesh
-          );
-          linkInstance.push(linkLine);
-        }
-      }
+      if (linkInstance.length < 8) createLines(2);
     };
     addRenderCallback(update);
 
