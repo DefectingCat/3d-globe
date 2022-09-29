@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import TWEEN, { Tween } from '@tweenjs/tween.js';
 import { MeshLineMaterial, MeshLine, MeshLineRaycast } from 'meshline';
-import { getBezierPoint, getVCenter } from 'utils';
+import { getBezierPoint, getVCenter, randomIntFromInterval } from 'utils';
 
 /**
  * 目标地点的圆点
@@ -176,9 +176,9 @@ export class Line {
           .easing(TWEEN.Easing.Circular.Out)
           .chain(this.destRing.drawBack.easing(TWEEN.Easing.Circular.In))
           .start();
-        // setTimeout(() => {
-        //   this.drawBack.start();
-        // }, 2000);
+        setTimeout(() => {
+          this.drawBack.start();
+        }, 2000);
       });
     this.drawBack = new TWEEN.Tween(lineLength)
       .to({ value: 0 }, 3000)
