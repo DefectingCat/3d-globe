@@ -6,7 +6,7 @@ import { getBezierPoint, getVCenter } from 'utils';
 /**
  * 目标地点的圆点
  */
-class Dot {
+export class Dot {
   mesh: THREE.Mesh<THREE.CircleGeometry, THREE.MeshStandardMaterial>;
   material: THREE.MeshStandardMaterial;
 
@@ -29,7 +29,7 @@ class Dot {
 /**
  * 目标地点的圆环动画
  */
-class Ring {
+export class Ring {
   mesh: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
 
   /**
@@ -110,7 +110,7 @@ class Ring {
   }
 }
 
-class Line {
+export class Line {
   mesh: THREE.Mesh<MeshLine, MeshLineMaterial>;
   draw: Tween<{
     value: number;
@@ -176,6 +176,9 @@ class Line {
           .easing(TWEEN.Easing.Circular.Out)
           .chain(this.destRing.drawBack.easing(TWEEN.Easing.Circular.In))
           .start();
+        setTimeout(() => {
+          this.drawBack.start();
+        }, 2000);
       })
       .start();
     this.drawBack = new TWEEN.Tween(lineLength)
@@ -213,6 +216,9 @@ class LinkLine {
 
   destDot: Dot;
   destRing: Ring;
+  line: Line;
+
+  paused = false;
 
   constructor(
     public source: THREE.Matrix4,
@@ -225,6 +231,32 @@ class LinkLine {
 
     this.destDot = new Dot(destination, color, size);
     this.destRing = new Ring(destination, color, size);
+
+    this.line = new Line(
+      this.p0,
+      this.p4,
+      color,
+      size,
+      this.destDot,
+      this.destRing
+    );
+  }
+
+  start() {
+    this.line.draw.start();
+  }
+
+  resume() {
+    if (!this.paused) return;
+    this.destRing.resume();
+    this.line.resume();
+    this.paused = false;
+  }
+
+  pause() {
+    this.destRing.pause();
+    this.line.pause();
+    this.paused = true;
   }
 }
 

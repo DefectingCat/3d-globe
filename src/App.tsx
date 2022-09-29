@@ -13,13 +13,14 @@ import TWEEN from '@tweenjs/tween.js';
 import { MeshLine, MeshLineMaterial } from 'meshline';
 import haloVertex from './lib/shaders/haloVertex.glsl';
 import haloFragment from './lib/shaders/haloFragment.glsl';
+import LinkLine, { Dot, Line, Ring } from 'components/LinkLine';
 
 const GLOBE_RADIUS = 25;
 // Globe map 的纵向像素
 const worldDotRows = 200;
 const worldDotSize = 0.095;
 
-const destNumber = 10;
+const destNumber = 1;
 const destColor = 0xf957ff;
 const dotSize = worldDotSize * 3;
 
@@ -123,137 +124,152 @@ const init: InitFn = ({ scene, camera, controls, addRenderCallback }) => {
     for (let i = 0; i < destNumber; i++) {
       const index = randomIntFromInterval(0, pointsLen - 1);
       const sourceIndex = randomIntFromInterval(0, pointsLen - 1);
-      const source = new THREE.Vector3();
-      const destiantion = new THREE.Vector3();
-      source.applyMatrix4(points[sourceIndex]);
-      destiantion.applyMatrix4(points[index]);
+      // const dot = new Dot(points[index], destColor, dotSize);
+      // const ring = new Ring(points[index], destColor, dotSize);
+      // links.add(dot.mesh, ring.mesh);
+      const linkLine = new LinkLine(
+        points[sourceIndex],
+        points[index],
+        destColor,
+        dotSize
+      );
+      linkLine.start();
+      links.add(
+        linkLine.destDot.mesh,
+        linkLine.destRing.mesh,
+        linkLine.line.mesh
+      );
+      // const source = new THREE.Vector3();
+      // const destiantion = new THREE.Vector3();
+      // source.applyMatrix4(points[sourceIndex]);
+      // destiantion.applyMatrix4(points[index]);
 
-      // dots
-      const destGeo = new THREE.CircleGeometry(dotSize, 32);
-      const destMaterial = new THREE.MeshStandardMaterial({
-        color: destColor,
-        opacity: 0,
-        transparent: true,
-      });
-      const destDot = new THREE.Mesh(destGeo, destMaterial);
-      destDot.applyMatrix4(points[index]);
-      links.add(destDot);
+      // // dots
+      // const destGeo = new THREE.CircleGeometry(dotSize, 32);
+      // const destMaterial = new THREE.MeshStandardMaterial({
+      //   color: destColor,
+      //   opacity: 0,
+      //   transparent: true,
+      // });
+      // const destDot = new THREE.Mesh(destGeo, destMaterial);
+      // destDot.applyMatrix4(points[index]);
+      // links.add(destDot);
 
-      // rings
-      const outter = new THREE.RingGeometry(dotSize, dotSize + 0.05, 32);
-      const materialOutter = new THREE.MeshBasicMaterial({
-        color: destColor,
-        side: THREE.DoubleSide,
-        opacity: 0,
-        transparent: true,
-      });
-      const ringOutter = new THREE.Mesh(outter, materialOutter);
-      ringOutter.applyMatrix4(points[index]);
-      const ringScale = { scale: 1, opacity: 1 };
-      const drawRingTween = new TWEEN.Tween(ringScale)
-        .to(
-          {
-            scale: 4.2,
-            opacity: 0.4,
-          },
-          700
-        )
-        .onUpdate(() => {
-          materialOutter.opacity = ringScale.opacity;
-          ringOutter.scale.set(
-            ringScale.scale,
-            ringScale.scale,
-            ringScale.scale
-          );
-        });
-      const drawRingBack = new TWEEN.Tween(ringScale)
-        .to(
-          {
-            opacity: 0,
-          },
-          100
-        )
-        .onUpdate(() => {
-          materialOutter.opacity = ringScale.opacity;
-        })
-        .onComplete(() => {
-          ringOutter.scale.set(0, 0, 0);
-        });
-      links.add(ringOutter);
+      // // rings
+      // const outter = new THREE.RingGeometry(dotSize, dotSize + 0.05, 32);
+      // const materialOutter = new THREE.MeshBasicMaterial({
+      //   color: destColor,
+      //   side: THREE.DoubleSide,
+      //   opacity: 0,
+      //   transparent: true,
+      // });
+      // const ringOutter = new THREE.Mesh(outter, materialOutter);
+      // ringOutter.applyMatrix4(points[index]);
+      // const ringScale = { scale: 1, opacity: 1 };
+      // const drawRingTween = new TWEEN.Tween(ringScale)
+      //   .to(
+      //     {
+      //       scale: 4.2,
+      //       opacity: 0.4,
+      //     },
+      //     700
+      //   )
+      //   .onUpdate(() => {
+      //     materialOutter.opacity = ringScale.opacity;
+      //     ringOutter.scale.set(
+      //       ringScale.scale,
+      //       ringScale.scale,
+      //       ringScale.scale
+      //     );
+      //   });
+      // const drawRingBack = new TWEEN.Tween(ringScale)
+      //   .to(
+      //     {
+      //       opacity: 0,
+      //     },
+      //     100
+      //   )
+      //   .onUpdate(() => {
+      //     materialOutter.opacity = ringScale.opacity;
+      //   })
+      //   .onComplete(() => {
+      //     ringOutter.scale.set(0, 0, 0);
+      //   });
+      // links.add(ringOutter);
 
-      // lines
-      let curve;
-      const angle = source.angleTo(destiantion);
-      if (angle > 1) {
-        const { v1, v2 } = getBezierPoint(source, destiantion);
-        curve = new THREE.CubicBezierCurve3(source, v1, v2, destiantion);
-      } else {
-        const p = new THREE.Vector3(0, 0, 0);
-        const rayLine = new THREE.Ray(
-          p,
-          getVCenter(source.clone(), destiantion.clone())
-        );
-        const vtop = rayLine.at(1.3, new THREE.Vector3());
-        curve = new THREE.QuadraticBezierCurve3(source, vtop, destiantion);
-      }
-      if (!curve) continue;
-      const curvePoints = curve.getPoints(100);
-      const material = new MeshLineMaterial({
-        color: destColor,
-        lineWidth: 0.3,
-        resolution: new THREE.Vector2(100, 100),
-        opacity: 0.8,
-      });
-      const lineLength = { value: 0 };
-      const line = new MeshLine();
-      const drawLineTween = new TWEEN.Tween(lineLength)
-        .to(
-          {
-            value: 100,
-          },
-          3000
-        )
-        .onUpdate(() => {
-          line.setPoints(
-            curvePoints
-              .slice(0, lineLength.value + 1)
-              .flatMap((p) => p.toArray()),
-            (p) => 0.2 + p / 2
-          );
-        })
-        .onComplete(() => {
-          destMaterial.opacity = 1;
-          destDot.scale.set(
-            destDot.scale.x + 0.01,
-            destDot.scale.y + 0.01,
-            destDot.scale.z + 0.01
-          );
-          drawRingTween
-            .easing(TWEEN.Easing.Circular.Out)
-            .chain(drawRingBack.easing(TWEEN.Easing.Circular.In))
-            .start();
-        })
-        .start();
-      const eraseLineTween = new TWEEN.Tween(lineLength)
-        .to({ value: 0 }, 3000)
-        .onUpdate(() => {
-          line.setPoints(
-            curvePoints
-              .slice(curvePoints.length - lineLength.value, curvePoints.length)
-              .flatMap((p) => p.toArray()),
-            (p: number) => 0.2 + p / 2
-          );
-        })
-        .onComplete(() => {
-          destMaterial.opacity = 0;
-          destDot.scale.set(0, 0, 0);
-        });
-      setTimeout(() => {
-        eraseLineTween.start();
-      }, 6000);
+      // // lines
+      // let curve;
+      // const angle = source.angleTo(destiantion);
+      // if (angle > 1) {
+      //   const { v1, v2 } = getBezierPoint(source, destiantion);
+      //   curve = new THREE.CubicBezierCurve3(source, v1, v2, destiantion);
+      // } else {
+      //   const p = new THREE.Vector3(0, 0, 0);
+      //   const rayLine = new THREE.Ray(
+      //     p,
+      //     getVCenter(source.clone(), destiantion.clone())
+      //   );
+      //   const vtop = rayLine.at(1.3, new THREE.Vector3());
+      //   curve = new THREE.QuadraticBezierCurve3(source, vtop, destiantion);
+      // }
+      // if (!curve) continue;
+      // const curvePoints = curve.getPoints(100);
+      // const material = new MeshLineMaterial({
+      //   color: destColor,
+      //   lineWidth: 0.3,
+      //   resolution: new THREE.Vector2(100, 100),
+      //   opacity: 0.8,
+      // });
+      // const lineLength = { value: 0 };
+      // const line = new MeshLine();
+      // const drawLineTween = new TWEEN.Tween(lineLength)
+      //   .to(
+      //     {
+      //       value: 100,
+      //     },
+      //     3000
+      //   )
+      //   .onUpdate(() => {
+      //     line.setPoints(
+      //       curvePoints
+      //         .slice(0, lineLength.value + 1)
+      //         .flatMap((p) => p.toArray()),
+      //       (p) => 0.2 + p / 2
+      //     );
+      //   })
+      //   .onComplete(() => {
+      //     destMaterial.opacity = 1;
+      //     destDot.scale.set(
+      //       destDot.scale.x + 0.01,
+      //       destDot.scale.y + 0.01,
+      //       destDot.scale.z + 0.01
+      //     );
+      //     drawRingTween
+      //       .easing(TWEEN.Easing.Circular.Out)
+      //       .chain(drawRingBack.easing(TWEEN.Easing.Circular.In))
+      //       .start();
+      //   })
+      //   .start();
+      // const eraseLineTween = new TWEEN.Tween(lineLength)
+      //   .to({ value: 0 }, 3000)
+      //   .onUpdate(() => {
+      //     line.setPoints(
+      //       curvePoints
+      //         .slice(curvePoints.length - lineLength.value, curvePoints.length)
+      //         .flatMap((p) => p.toArray()),
+      //       (p: number) => 0.2 + p / 2
+      //     );
+      //   })
+      //   .onComplete(() => {
+      //     destMaterial.opacity = 0;
+      //     destDot.scale.set(0, 0, 0);
+      //   });
+      // setTimeout(() => {
+      //   eraseLineTween.start();
+      // }, 6000);
 
-      const lineMesh = new THREE.Mesh(line, material);
-      links.add(lineMesh);
+      // const lineMesh = new THREE.Mesh(line, material);
+      // links.add(lineMesh);
     }
     parentContainer.add(links);
   };
